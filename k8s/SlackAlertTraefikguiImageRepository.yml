@@ -1,0 +1,17 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: slack-traefikgui-image-repository
+  namespace: flux-system
+spec:
+  providerRef:
+    name: slack
+  eventMetadata:
+    summary: new traefikgui image pushed to repository
+    env: production
+    cluster: digitalocean
+    region: fra1
+  eventSeverity: info
+  eventSources:
+    - kind: ImageRepository
+      name: "traefikgui"

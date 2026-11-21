@@ -1,0 +1,14 @@
+# Erzwingt einen abschliessenden Slash auf "/trafficlight/dashboard", BEVOR
+# stripPrefix greift. Ohne Slash wuerde der Browser die relativen Pfade der GUI
+# (z.B. "app.js", "api/rows") gegen "/trafficlight/" statt gegen
+# "/trafficlight/dashboard/" aufloesen -> 404.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: trafficlight-dashboard-add-trailing-slash
+  namespace: monitoring
+spec:
+  redirectRegex:
+    regex: ^(https?://[^/]+/trafficlight/dashboard)$
+    replacement: ${1}/
+    permanent: false

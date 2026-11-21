@@ -1,0 +1,140 @@
+'use strict';
+// Each row contains a stable key followed by German, English, Spanish and French.
+const I18n = (() => {
+  const languages = ['de', 'en', 'es', 'fr'];
+  const rows = [
+    ['language', 'Sprache', 'Language', 'Idioma', 'Langue'],
+    ['range', 'Zeitraum', 'Time range', 'Período', 'Période'],
+    ['days', '{n} Tage', '{n} days', '{n} días', '{n} jours'],
+    ['pauseTitle', 'Live-Aktualisierung anhalten/fortsetzen', 'Pause/resume live updates', 'Pausar/reanudar actualizaciones en directo', 'Suspendre/reprendre les mises à jour en direct'],
+    ['pause', '⏸ Pause', '⏸ Pause', '⏸ Pausar', '⏸ Pause'],
+    ['resume', '▶ Fortsetzen', '▶ Resume', '▶ Reanudar', '▶ Reprendre'],
+    ['exportTitle', 'Gefilterte Requests als CSV herunterladen', 'Download filtered requests as CSV', 'Descargar solicitudes filtradas como CSV', 'Télécharger les requêtes filtrées en CSV'],
+    ['podsTitle', 'Traefik-Pods und Speicher anzeigen', 'Show Traefik pods and storage', 'Mostrar pods de Traefik y almacenamiento', 'Afficher les pods Traefik et le stockage'],
+    ['connecting', 'verbinde…', 'connecting…', 'conectando…', 'connexion…'],
+    ['disconnected', 'getrennt', 'disconnected', 'desconectado', 'déconnecté'],
+    ['reconnecting', 'getrennt – verbinde neu…', 'disconnected – reconnecting…', 'desconectado – reconectando…', 'déconnecté – reconnexion…'],
+    ['paused', 'pausiert', 'paused', 'en pausa', 'en pause'],
+    ['background', 'pausiert (Tab im Hintergrund)', 'paused (background tab)', 'en pausa (pestaña en segundo plano)', 'en pause (onglet en arrière-plan)'],
+    ['live', 'live', 'live', 'en directo', 'en direct'],
+    ['textPlaceholder', 'Volltext (Pfad, UA, IP, Feldwert…)', 'Full text (path, UA, IP, field value…)', 'Texto completo (ruta, UA, IP, valor de campo…)', 'Texte intégral (chemin, UA, IP, valeur de champ…)'],
+    ['hostPlaceholder', 'Host enthält…', 'Host contains…', 'Host contiene…', 'Hôte contient…'],
+    ['allRouters', 'alle Router', 'all routers', 'todos los routers', 'tous les routeurs'],
+    ['allMethods', 'alle Methoden', 'all methods', 'todos los métodos', 'toutes les méthodes'],
+    ['allPods', 'alle Pods', 'all pods', 'todos los pods', 'tous les pods'],
+    ['hideInternal', 'interne ausblenden', 'hide internal', 'ocultar internos', 'masquer les requêtes internes'],
+    ['hideBots', 'Bots ausblenden', 'hide bots', 'ocultar bots', 'masquer les bots'],
+    ['reset', 'Filter zurücksetzen', 'Reset filters', 'Restablecer filtros', 'Réinitialiser les filtres'],
+    ['timeline', 'Zeitleiste', 'Timeline', 'Cronología', 'Chronologie'],
+    ['requestsOverTime', 'Requests über Zeit', 'Requests over time', 'Solicitudes a lo largo del tiempo', 'Requêtes dans le temps'],
+    ['barHint', 'Klick auf Balken = Zeitfilter', 'Click a bar to filter by time', 'Haga clic en una barra para filtrar por tiempo', 'Cliquez sur une barre pour filtrer par période'],
+    ['statusCodes', 'Statuscodes', 'Status codes', 'Códigos de estado', 'Codes de statut'],
+    ['latencyOverTime', 'Antwortzeit über Zeit (ms)', 'Response time over time (ms)', 'Tiempo de respuesta a lo largo del tiempo (ms)', 'Temps de réponse dans le temps (ms)'],
+    ['latencyDistribution', 'Antwortzeit-Verteilung', 'Response time distribution', 'Distribución del tiempo de respuesta', 'Distribution du temps de réponse'],
+    ['methods', 'Methoden', 'Methods', 'Métodos', 'Méthodes'],
+    ['protocols', 'Protokolle', 'Protocols', 'Protocolos', 'Protocoles'],
+    ['trafficOverTime', 'Traffic (Bytes) über Zeit', 'Traffic (bytes) over time', 'Tráfico (bytes) a lo largo del tiempo', 'Trafic (octets) dans le temps'],
+    ['topHosts', 'Top Hosts', 'Top hosts', 'Hosts principales', 'Hôtes principaux'],
+    ['topServices', 'Top Router / Services', 'Top routers / services', 'Routers / servicios principales', 'Routeurs / services principaux'],
+    ['topPaths', 'Top Pfade', 'Top paths', 'Rutas principales', 'Chemins principaux'],
+    ['slowPaths', 'Langsamste Pfade (p95, min. 3 Req.)', 'Slowest paths (p95, min. 3 requests)', 'Rutas más lentas (p95, mín. 3 solicitudes)', 'Chemins les plus lents (p95, min. 3 requêtes)'],
+    ['errorPaths', 'Fehler-Pfade (4xx/5xx)', 'Error paths (4xx/5xx)', 'Rutas con errores (4xx/5xx)', 'Chemins en erreur (4xx/5xx)'],
+    ['topCountries', 'Top Länder', 'Top countries', 'Países principales', 'Pays principaux'],
+    ['topClients', 'Top Client-IPs', 'Top client IPs', 'IP de clientes principales', 'IP clientes principales'],
+    ['topAgents', 'Top User-Agents', 'Top user agents', 'Agentes de usuario principales', 'Agents utilisateurs principaux'],
+    ['traefikPods', 'Traefik-Pods', 'Traefik pods', 'Pods de Traefik', 'Pods Traefik'],
+    ['dynamicFields', 'Dynamische Felder', 'Dynamic fields', 'Campos dinámicos', 'Champs dynamiques'],
+    ['fieldsTitle', 'Zusätzliche Felder aus dem JSON-Log (z. B. per accesslog.fields.headers konfigurierte Header)', 'Additional fields from the JSON log (e.g. headers configured via accesslog.fields.headers)', 'Campos adicionales del registro JSON (p. ej., cabeceras configuradas mediante accesslog.fields.headers)', 'Champs supplémentaires du journal JSON (p. ex. en-têtes configurés via accesslog.fields.headers)'],
+    ['requests', 'Requests', 'Requests', 'Solicitudes', 'Requêtes'],
+    ['status', 'Status', 'Status', 'Estado', 'Statut'],
+    ['systemLog', 'Systemlog', 'System log', 'Registro de sistema', 'Journal système'],
+    ['client', 'Client', 'Client', 'Cliente', 'Client'],
+    ['clients', 'Clients', 'Clients', 'Clientes', 'Clients'],
+    ['traffic', 'Traffic', 'Traffic', 'Tráfico', 'Trafic'],
+    ['service', 'Service', 'Service', 'Servicio', 'Service'],
+    ['serviceRouter', 'Service ‹Router›', 'Service ‹Router›', 'Servicio ‹Router›', 'Service ‹Routeur›'],
+    ['systemLogs', 'Traefik-Systemlogs', 'Traefik system logs', 'Registros de sistema de Traefik', 'Journaux système Traefik'],
+    ['podsStorage', 'Pods & Speicher', 'Pods & storage', 'Pods y almacenamiento', 'Pods et stockage'],
+    ['close', 'Schließen (Esc)', 'Close (Esc)', 'Cerrar (Esc)', 'Fermer (Échap)'],
+    ['private', 'privat/intern', 'private/internal', 'privado/interno', 'privé/interne'],
+    ['unknown', 'unbekannt', 'unknown', 'desconocido', 'inconnu'],
+    ['path', 'Pfad', 'Path', 'Ruta', 'Chemin'],
+    ['country', 'Land', 'Country', 'País', 'Pays'],
+    ['time', 'Zeit', 'Time', 'Hora', 'Heure'],
+    ['duration', 'Dauer', 'Duration', 'Duración', 'Durée'],
+    ['size', 'Größe', 'Size', 'Tamaño', 'Taille'],
+    ['methodShort', 'Meth.', 'Method', 'Método', 'Méthode'],
+    ['timelineHint', '{from} – {to} · {step}/Balken · Ziehen = Zeitraum wählen, Doppelklick = zurücksetzen', '{from} – {to} · {step}/bar · Drag to select a range, double-click to reset', '{from} – {to} · {step}/barra · Arrastre para seleccionar un período, doble clic para restablecer', '{from} – {to} · {step}/barre · Glissez pour sélectionner une période, double-cliquez pour réinitialiser'],
+    ['countries', 'Länder', 'Countries', 'Países', 'Pays'],
+    ['off', 'aus', 'off', 'desactivado', 'désactivé'],
+    ['hostNoWww', 'Host (ohne www.)', 'Host (without www.)', 'Host (sin www.)', 'Hôte (sans www.)'],
+    ['statusPath', 'Status Pfad', 'Status path', 'Estado ruta', 'Statut chemin'],
+    ['since', 'ab {date}', 'from {date}', 'desde {date}', 'depuis {date}'],
+    ['summary', '{count} Requests · {mode} · {ms} ms · {time}', '{count} requests · {mode} · {ms} ms · {time}', '{count} solicitudes · {mode} · {ms} ms · {time}', '{count} requêtes · {mode} · {ms} ms · {time}'],
+    ['exact', 'exakt', 'exact', 'exacto', 'exact'],
+    ['rollupMode', 'voraggregiert', 'pre-aggregated', 'preagregado', 'préagrégé'],
+    ['rollupNotice', 'Großer Zeitraum: Zeitreihen, Kennzahlen, Hosts, Services und Länder stammen aus der Voraggregation (vollständig). Pfade, Clients, User-Agents, dynamische Felder und die Request-Tabelle basieren auf den Einzel-Requests ab {date}.', 'Large time range: time series, metrics, hosts, services and countries come from pre-aggregated data (complete). Paths, clients, user agents, dynamic fields and the request table use individual requests from {date}.', 'Período amplio: las series temporales, métricas, hosts, servicios y países proceden de datos preagregados (completos). Las rutas, clientes, agentes de usuario, campos dinámicos y la tabla de solicitudes usan solicitudes individuales desde {date}.', 'Longue période : les séries temporelles, indicateurs, hôtes, services et pays proviennent des données préagrégées (complètes). Les chemins, clients, agents utilisateurs, champs dynamiques et la table des requêtes utilisent les requêtes individuelles depuis {date}.'],
+    ['clippedNotice', 'Dieser Filter benötigt Einzel-Requests; ausgewertet wird der Zeitraum ab {date} (Detail-Budget bzw. Detail-Aufbewahrung erreicht). Zeitraum verkleinern für eine vollständige Auswertung.', 'This filter requires individual requests; the analysis starts at {date} (detail budget or retention limit reached). Shorten the range for a complete analysis.', 'Este filtro requiere solicitudes individuales; el análisis comienza en {date} (se alcanzó el límite de detalle o de retención). Reduzca el período para un análisis completo.', 'Ce filtre nécessite les requêtes individuelles ; l’analyse commence à {date} (limite de détail ou de rétention atteinte). Réduisez la période pour une analyse complète.'],
+    ['noJsonNotice', 'Pod {pod} liefert kein JSON-Access-Log und wird nicht ausgewertet (Traefik mit {code} starten).', 'Pod {pod} does not provide JSON access logs and is excluded (start Traefik with {code}).', 'El pod {pod} no proporciona registros de acceso JSON y se excluye (inicie Traefik con {code}).', 'Le pod {pod} ne fournit pas de journal d’accès JSON et est exclu (démarrez Traefik avec {code}).'],
+    ['podListError', 'Pod-Liste nicht abrufbar: {error}', 'Cannot retrieve pod list: {error}', 'No se puede obtener la lista de pods: {error}', 'Impossible de récupérer la liste des pods : {error}'],
+    ['count', 'Anzahl', 'Count', 'Cantidad', 'Nombre'],
+    ['noData', 'keine Daten', 'no data', 'sin datos', 'aucune donnée'],
+    ['chooseField', 'Feld wählen… ({count})', 'Choose field… ({count})', 'Elegir campo… ({count})', 'Choisir un champ… ({count})'],
+    ['noFields', 'keine dynamischen Felder im Zeitraum', 'no dynamic fields in this range', 'sin campos dinámicos en este período', 'aucun champ dynamique dans cette période'],
+    ['field', 'Feld', 'Field', 'Campo', 'Champ'],
+    ['entriesWithValue', 'Einträge mit Wert', 'Entries with value', 'Entradas con valor', 'Entrées avec une valeur'],
+    ['fieldsEmpty', 'Im Zeitraum enthalten die Logs keine zusätzlichen Felder. Header lassen sich in Traefik z. B. mit {code} aufnehmen.', 'The logs contain no additional fields in this range. Headers can be captured in Traefik, for example with {code}.', 'Los registros no contienen campos adicionales en este período. Las cabeceras se pueden incluir en Traefik, por ejemplo con {code}.', 'Les journaux ne contiennent aucun champ supplémentaire dans cette période. Les en-têtes peuvent être enregistrés dans Traefik, par exemple avec {code}.'],
+    ['loaded', '{count} geladen', '{count} loaded', '{count} cargadas', '{count} chargées'],
+    ['moreScroll', 'weitere beim Scrollen', 'more on scroll', 'más al desplazarse', 'plus en défilant'],
+    ['rawSince', 'Einzel-Requests ab {date}', 'individual requests from {date}', 'solicitudes individuales desde {date}', 'requêtes individuelles depuis {date}'],
+    ['rowHint', 'Klick auf Zeile = Rohdaten inkl. dynamischer Felder', 'Click a row for raw data including dynamic fields', 'Haga clic en una fila para ver los datos originales y campos dinámicos', 'Cliquez sur une ligne pour voir les données brutes et les champs dynamiques'],
+    ['dynamicCount', 'Dynamische Felder ({count})', 'Dynamic fields ({count})', 'Campos dinámicos ({count})', 'Champs dynamiques ({count})'],
+    ['none', 'keine', 'none', 'ninguno', 'aucun'],
+    ['entryTitle', 'Vollständiger Eintrag · Pod {pod} · {country} · geschrieben {date}', 'Complete entry · Pod {pod} · {country} · written {date}', 'Entrada completa · Pod {pod} · {country} · escrita {date}', 'Entrée complète · Pod {pod} · {country} · écrite {date}'],
+    ['all', 'alle', 'all', 'todos', 'tous'],
+    ['message', 'Meldung', 'Message', 'Mensaje', 'Message'],
+    ['sysEmpty', 'Keine Einträge. Systemlogs werden nur gelesen, wenn Traefik sie als JSON schreibt ({code}).', 'No entries. System logs are read only when Traefik writes them as JSON ({code}).', 'Sin entradas. Los registros de sistema solo se leen si Traefik los escribe como JSON ({code}).', 'Aucune entrée. Les journaux système ne sont lus que si Traefik les écrit en JSON ({code}).'],
+    ['stateStreaming', 'liest', 'streaming', 'leyendo', 'lecture'],
+    ['stateWaiting', 'wartet', 'waiting', 'esperando', 'en attente'],
+    ['stateNoJson', 'kein JSON', 'no JSON', 'sin JSON', 'pas de JSON'],
+    ['stateError', 'Fehler', 'error', 'error', 'erreur'],
+    ['stateGone', 'beendet', 'gone', 'finalizado', 'terminé'],
+    ['podInfo', 'Namespace {namespaces} · Selector {selector} · {count} Live-Verbindung(en)', 'Namespace {namespaces} · Selector {selector} · {count} live connection(s)', 'Namespace {namespaces} · Selector {selector} · {count} conexiones en directo', 'Namespace {namespaces} · Selector {selector} · {count} connexion(s) en direct'],
+    ['state', 'Zustand', 'State', 'Estado', 'État'],
+    ['skipped', 'übersprungen (kein JSON)', 'skipped (no JSON)', 'omitidos (sin JSON)', 'ignorés (pas de JSON)'],
+    ['restarts', 'Neustarts', 'Restarts', 'Reinicios', 'Redémarrages'],
+    ['lastLine', 'letzte Zeile', 'last line', 'última línea', 'dernière ligne'],
+    ['note', 'Hinweis', 'Note', 'Nota', 'Remarque'],
+    ['noPods', 'Keine Pods gefunden (Namespace {namespaces}, Selector {selector}).', 'No pods found (namespace {namespaces}, selector {selector}).', 'No se encontraron pods (namespace {namespaces}, selector {selector}).', 'Aucun pod trouvé (namespace {namespaces}, selector {selector}).'],
+    ['storedRequests', 'Gespeicherte Requests', 'Stored requests', 'Solicitudes almacenadas', 'Requêtes stockées'],
+    ['dataSince', 'Daten seit', 'Data since', 'Datos desde', 'Données depuis'],
+    ['rawDataSince', 'Einzel-Requests seit', 'Individual requests since', 'Solicitudes individuales desde', 'Requêtes individuelles depuis'],
+    ['retention', 'Aufbewahrung', 'Retention', 'Retención', 'Rétention'],
+    ['detailsDays', 'Details {days}', 'details {days}', 'detalles {days}', 'détails {days}'],
+    ['redisMemory', 'Redis-Speicher', 'Redis memory', 'Memoria de Redis', 'Mémoire Redis'],
+    ['detailCache', 'Detail-Cache', 'Detail cache', 'Caché de detalles', 'Cache de détails'],
+    ['queue', 'Warteschlange', 'Queue', 'Cola', 'File d’attente'],
+    ['pruned', 'Wegen Speicher verworfen', 'Discarded due to memory', 'Descartados por memoria', 'Supprimés faute de mémoire'],
+    ['hoursDetails', '{hours} h Details', '{hours} h details', '{hours} h de detalles', '{hours} h de détails'],
+  ];
+  const dictionaries = Object.fromEntries(languages.map((lang, i) => [lang, Object.fromEntries(rows.map(row => [row[0], row[i + 1]]))]));
+  const storageKey = 'trafficlight-ui-language';
+  const normalize = value => typeof value === 'string' ? value.toLowerCase().split(/[-_]/)[0] : '';
+  const supported = value => languages.includes(normalize(value)) ? normalize(value) : null;
+  function detect(storage, browserLanguages) {
+    try { const saved = supported(storage?.getItem(storageKey)); if (saved) return saved; } catch {}
+    for (const value of browserLanguages || []) { const lang = supported(value); if (lang) return lang; }
+    return 'de';
+  }
+  function save(storage, lang) { try { storage?.setItem(storageKey, lang); } catch {} }
+  function translate(lang, key, values = {}) {
+    const text = dictionaries[lang]?.[key];
+    if (typeof text !== 'string' || !text) throw new Error(`Missing translation: ${lang}.${key}`);
+    return text.replace(/\{(\w+)\}/g, (_, name) => {
+      if (!Object.hasOwn(values, name)) throw new Error(`Missing translation parameter: ${key}.${name}`);
+      return String(values[name]);
+    });
+  }
+  return { languages, dictionaries, storageKey, supported, detect, save, translate };
+})();
+if (typeof module !== 'undefined') module.exports = I18n;

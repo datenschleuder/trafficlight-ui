@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefikgui
+  namespace: monitoring
+  labels:
+    app: traefikgui
+    app.kubernetes.io/name: traefikgui
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/managed-by: fluxcd-kustomize-operator
+spec:
+  # Genau eine Instanz: sie ist der einzige Schreiber in Redis. Recreate verhindert,
+  # dass bei einem Update kurzzeitig zwei Instanzen dieselben Logs einlesen.
+  replicas: 1
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: traefikgui
+  template:
+    metadata:
+      labels:
+        app: traefikgui
+        app.kubernetes.io/name: traefikgui
+        app.kubernetes.io/instance: production
+        app.kubernetes.io/managed-by: fluxcd-kustomize-operator
+    spec:
+      serviceAccountName: traefikgui
+      # Token wird benötigt: Pods auflisten und Logs lesen (siehe RBAC.yml).
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: traefikgui
+          image: registry.digitalocean.com/datenschleuder/traefikgui:1.0.2 # {"$imagepolicy": "flux-system:traefikgui"}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_ADDR
+              value: traefikgui-redis:6379
+            # Optional: Secret "traefikgui" mit Key REDIS_PASSWORD (siehe README). Ohne Secret
+            # läuft Redis ohne Passwort und ist nur per NetworkPolicy abgeschottet.
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: traefikgui
+                  key: REDIS_PASSWORD
+                  optional: true
+            # Namespaces (kommagetrennt) und Label-Selector der Traefik-Pods. Alle passenden
+            # Pods werden gelesen; neue/entfernte Pods werden automatisch erkannt.
+            - name: TRAEFIK_NAMESPACES
+              value: default
+            - name: TRAEFIK_SELECTOR
+              value: app=traefik
+            # Aufbewahrung der Auswertungen in Tagen (1-90, mehr als 90 ist nicht möglich).
+            - name: RETENTION_DAYS
+              value: "90"
+            # Aufbewahrung der Einzel-Requests (Rohdaten inkl. dynamischer Felder) in Tagen.
+            # Reicht der Redis-Speicher nicht, werden die ältesten Stunden automatisch verworfen.
+            - name: RAW_RETENTION_DAYS
+              value: "90"
+            # Max. Einzel-Requests, die für Detail-Auswertungen im Arbeitsspeicher liegen
+            # (ca. 150-250 MB je Million). Größere Zeiträume nutzen die Voraggregation.
+            - name: DETAIL_MAX_ENTRIES
+              value: "500000"
+            # Go-Speicherlimit knapp unter dem Container-Limit (resources.limits.memory).
+            - name: GOMEMLIMIT
+              value: 600MiB
+            # debug | info | warn | error
+            - name: LOG_LEVEL
+              value: info
+            # text | json
+            - name: LOG_FORMAT
+              value: json
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

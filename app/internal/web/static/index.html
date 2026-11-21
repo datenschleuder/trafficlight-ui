@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>TrafficLight-UI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%A6%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>TrafficLight-UI</h1>
+  <div class="grp">
+    <label><span data-i18n="range">Zeitraum</span>
+      <select id="range">
+        <option value="900">15 min</option><option value="3600">1 h</option><option value="21600">6 h</option>
+        <option value="86400">24 h</option><option value="604800" data-i18n-days="7">7 Tage</option><option value="2592000" data-i18n-days="30">30 Tage</option>
+        <option value="7776000" data-i18n-days="90">90 Tage</option>
+      </select>
+    </label>
+    <button id="btnPause" data-i18n-title="pauseTitle" title="Live-Aktualisierung anhalten/fortsetzen">⏸ Pause</button>
+    <a class="btn" id="btnExport" data-i18n-title="exportTitle" title="Gefilterte Requests als CSV herunterladen" download>CSV</a>
+  </div>
+  <label><span data-i18n="language">Sprache</span> <select id="language"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option></select></label>
+  <button id="pods" class="pill" data-i18n-title="podsTitle" title="Traefik-Pods und Speicher anzeigen"></button>
+  <span id="live" class="pill"><i class="dot"></i><span id="liveText">verbinde…</span></span>
+  <span id="status"></span>
+</header>
+
+<div id="filters">
+  <input type="text" id="fText" data-i18n-placeholder="textPlaceholder" placeholder="Volltext (Pfad, UA, IP, Feldwert…)">
+  <input type="text" id="fSite" data-i18n-placeholder="hostPlaceholder" placeholder="Host enthält…" list="dlSite"><datalist id="dlSite"></datalist>
+  <select id="fRouter"><option value="" data-i18n="allRouters">alle Router</option></select>
+  <select id="fMethod"><option value="" data-i18n="allMethods">alle Methoden</option></select>
+  <select id="fPod"><option value="" data-i18n="allPods">alle Pods</option></select>
+  <span class="grp"><span data-i18n="status">Status</span>:
+    <label class="st2"><input type="checkbox" class="fSt" value="2" checked>2xx</label>
+    <label class="st3"><input type="checkbox" class="fSt" value="3" checked>3xx</label>
+    <label class="st4"><input type="checkbox" class="fSt" value="4" checked>4xx</label>
+    <label class="st5"><input type="checkbox" class="fSt" value="5" checked>5xx</label>
+  </span>
+  <input type="number" id="fMinDur" placeholder="min. ms" min="0">
+  <label><input type="checkbox" id="fNoInt" checked> <span data-i18n="hideInternal">interne ausblenden</span></label>
+  <label><input type="checkbox" id="fNoBots"> <span data-i18n="hideBots">Bots ausblenden</span></label>
+  <span id="chips" class="grp"></span>
+  <button id="btnReset" data-i18n="reset">Filter zurücksetzen</button>
+</div>
+<div id="notice" hidden></div>
+
+<main>
+  <section class="card s12"><h2><span data-i18n="timeline">Zeitleiste</span> <span class="hint" id="tlInfo"></span></h2><div class="chart timeline"><canvas id="cTimeline"></canvas></div></section>
+  <section class="card s12"><div id="kpis"></div></section>
+
+  <section class="card s8"><h2><span data-i18n="requestsOverTime">Requests über Zeit</span> <span class="hint" data-i18n="barHint">Klick auf Balken = Zeitfilter</span></h2><div class="chart"><canvas id="cTime"></canvas></div></section>
+  <section class="card s4"><h2 data-i18n="statusCodes">Statuscodes</h2><div class="chart"><canvas id="cStatus"></canvas></div></section>
+
+  <section class="card s8"><h2 data-i18n="latencyOverTime">Antwortzeit über Zeit (ms)</h2><div class="chart"><canvas id="cLat"></canvas></div></section>
+  <section class="card s4"><h2 data-i18n="latencyDistribution">Antwortzeit-Verteilung</h2><div class="chart"><canvas id="cHist"></canvas></div></section>
+
+  <section class="card s4"><h2 data-i18n="methods">Methoden</h2><div class="chart small"><canvas id="cMethod"></canvas></div></section>
+  <section class="card s4"><h2 data-i18n="protocols">Protokolle</h2><div class="chart small"><canvas id="cProto"></canvas></div></section>
+  <section class="card s4"><h2 data-i18n="trafficOverTime">Traffic (Bytes) über Zeit</h2><div class="chart small"><canvas id="cBytes"></canvas></div></section>
+
+  <section class="card s6"><h2 data-i18n="topHosts">Top Hosts</h2><div class="scroll" id="tSite"></div></section>
+  <section class="card s6"><h2 data-i18n="topServices">Top Router / Services</h2><div class="scroll" id="tService"></div></section>
+  <section class="card s6"><h2><span data-i18n="topPaths">Top Pfade</span> <span class="clip"></span></h2><div class="scroll" id="tRoute"></div></section>
+  <section class="card s6"><h2><span data-i18n="slowPaths">Langsamste Pfade (p95, min. 3 Req.)</span> <span class="clip"></span></h2><div class="scroll" id="tSlow"></div></section>
+  <section class="card s4"><h2><span data-i18n="errorPaths">Fehler-Pfade (4xx/5xx)</span> <span class="clip"></span></h2><div class="scroll" id="tErr"></div></section>
+  <section class="card s4"><h2 data-i18n="topCountries">Top Länder</h2><div class="scroll" id="tCountry"></div></section>
+  <section class="card s4"><h2><span data-i18n="topClients">Top Client-IPs</span> <span class="clip"></span></h2><div class="scroll" id="tClient"></div></section>
+  <section class="card s8"><h2><span data-i18n="topAgents">Top User-Agents</span> <span class="clip"></span></h2><div class="scroll" id="tUa"></div></section>
+  <section class="card s4"><h2 data-i18n="traefikPods">Traefik-Pods</h2><div class="scroll" id="tPod"></div></section>
+
+  <section class="card s12">
+    <h2><span><span data-i18n="dynamicFields">Dynamische Felder</span> <select id="xf" data-i18n-title="fieldsTitle" title="Zusätzliche Felder aus dem JSON-Log (z. B. per accesslog.fields.headers konfigurierte Header)"></select></span> <span class="clip"></span></h2>
+    <div class="scroll" id="tX"></div>
+  </section>
+
+  <section class="card s12">
+    <h2><span data-i18n="requests">Requests</span> <span class="hint" id="reqInfo"></span></h2>
+    <div id="vt" class="vt"><div class="vt-head" id="vtHead"></div><div class="vt-body" id="vtBody"><div class="vt-pad" id="vtPad"></div><div class="vt-rows" id="vtRows"></div></div></div>
+  </section>
+
+  <section class="card s12">
+    <h2><span data-i18n="systemLogs">Traefik-Systemlogs</span> <span class="grp tabs" id="lvTabs"></span></h2>
+    <div class="scroll" id="tSys"></div>
+  </section>
+
+  <section class="card s12" id="podCard">
+    <h2><span data-i18n="podsStorage">Pods &amp; Speicher</span> <span class="hint" id="podInfo"></span></h2>
+    <div class="scroll" id="tPods"></div>
+    <div id="storeInfo"></div>
+  </section>
+</main>
+
+<footer><a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP Geolocation by DB-IP</a> (CC BY 4.0) · <span id="ver"></span></footer>
+
+<div id="modal" hidden><div id="modalBox"><button id="modalClose" data-i18n-title="close" title="Schließen (Esc)">✕</button><div id="modalBody"></div></div></div>
+
+<script src="chart.umd.min.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# NetworkPolicies für traefikgui und dessen Redis im Namespace "monitoring".
+#
+# Eingehend ist im Namespace alles gesperrt (default-deny-all), außer:
+#   - traefikgui:      nur von den Traefik-Pods (Namespace default) für die IngressRoute
+#   - traefikgui-redis: nur von traefikgui
+# kubectl port-forward funktioniert trotzdem (läuft über das Kubelet).
+# Ausgehend ist für traefikgui bewusst nichts eingeschränkt: es muss die Kubernetes-API
+# erreichen, deren Adresse beim verwalteten Control-Plane nicht fest ist.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: traefikgui-allow-traefik
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: traefikgui
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+          podSelector:
+            matchLabels:
+              app: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Redis: nur traefikgui darf verbinden, Redis selbst braucht keine ausgehenden Verbindungen.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: traefikgui-redis
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: traefikgui-redis
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: traefikgui
+      ports:
+        - protocol: TCP
+          port: 6379
+  egress: []

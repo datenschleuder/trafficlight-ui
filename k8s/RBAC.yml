@@ -1,0 +1,31 @@
+# traefikgui findet die Traefik-Pods über die Kubernetes-API und liest deren Logs.
+# Dafür genügen Leserechte auf Pods und Pod-Logs im Namespace der Traefik-Pods
+# (default); der ServiceAccount selbst liegt im Namespace "monitoring".
+# Läuft Traefik (zusätzlich) in anderen Namespaces, Role + RoleBinding dort ebenfalls
+# anlegen und TRAEFIK_NAMESPACES im Deployment ergänzen.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: traefikgui-log-reader
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: traefikgui-log-reader
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: traefikgui-log-reader
+subjects:
+  - kind: ServiceAccount
+    name: traefikgui
+    namespace: monitoring

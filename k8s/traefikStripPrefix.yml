@@ -1,0 +1,12 @@
+# Entfernt "/trafficlight/dashboard" aus dem Pfad, bevor die Anfrage traefikgui
+# erreicht (traefikgui selbst lauscht auf "/").
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: trafficlight-dashboard-strip-prefix
+  namespace: monitoring
+spec:
+  stripPrefix:
+    prefixes:
+      - /trafficlight/dashboard
+    forceSlash: false

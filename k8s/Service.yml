@@ -1,0 +1,18 @@
+# Von außen über https://www.yourdomain.tld/trafficlight/dashboard/ (traefikIngressRoute.yml,
+# Basic Auth). Alternativ ohne Ingress:
+#   kubectl -n monitoring port-forward svc/traefikgui 8787:8080  ->  http://127.0.0.1:8787
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefikgui
+  namespace: monitoring
+  labels:
+    app: traefikgui
+spec:
+  type: ClusterIP
+  selector:
+    app: traefikgui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

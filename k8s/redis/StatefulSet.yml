@@ -1,0 +1,105 @@
+# Redis als Datenspeicher für traefikgui (bis zu 90 Tage). Anders als ein Cache darf
+# dieser Redis nichts verdrängen (noeviction) und schreibt auf ein Volume (AOF):
+# ein Neustart verliert höchstens die letzte Sekunde.
+#
+# Speicherbedarf: ca. 100-120 Byte je Request für die Einzel-Requests (verdichtet) plus
+# wenige MB für die Voraggregate. 512 MB reichen für ca. 3,5 Mio. Requests. Wird der
+# Speicher knapp, verwirft traefikgui die ältesten Einzel-Requests; die Auswertungen
+# (Voraggregate) bleiben für die volle Aufbewahrungszeit erhalten. Für mehr Historie
+# --maxmemory und resources.limits.memory gemeinsam erhöhen.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: traefikgui-redis
+  namespace: monitoring
+  labels:
+    app: traefikgui-redis
+spec:
+  serviceName: traefikgui-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefikgui-redis
+  template:
+    metadata:
+      labels:
+        app: traefikgui-redis
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: redis:8.10-alpine
+          # Über die Shell gestartet, damit das Passwort optional bleibt (Secret "traefikgui").
+          command:
+            - sh
+            - -c
+            - >-
+              exec redis-server
+              --dir /data
+              --maxmemory 512mb
+              --maxmemory-policy noeviction
+              --appendonly yes
+              --appendfsync everysec
+              --save ""
+              --list-compress-depth 1
+              --list-max-listpack-size -4
+              ${REDIS_PASSWORD:+--requirepass "$REDIS_PASSWORD"}
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: traefikgui
+                  key: REDIS_PASSWORD
+                  optional: true
+            # redis-cli (Probes) nutzt dasselbe Passwort.
+            - name: REDISCLI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: traefikgui
+                  key: REDIS_PASSWORD
+                  optional: true
+          ports:
+            - name: redis
+              containerPort: 6379
+          # Bereit erst, wenn die Daten vom Volume geladen sind (vorher antwortet Redis mit LOADING).
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli ping | grep -q PONG"]
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              # Reserve über maxmemory für das Neuschreiben der AOF-Datei (fork, copy-on-write).
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
