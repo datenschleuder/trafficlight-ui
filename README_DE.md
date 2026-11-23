@@ -186,4 +186,4 @@ Gegen einen echten Cluster: `kubectl proxy` starten und `KUBE_API_URL=http://127
 ## Kontakt:
 
 Wenn Sie die Software nutzen, freuen wir uns über Feedback, Verbesserungsvorschläge, Fehlerberichte und
-ihre Erfahrung mit der Software im täglischen Einsatz. Bitte melden Sie sich bei uns unter [https://www.playme.berlin/hilfe](https://www.playme.berlin/hilfe)`
+ihre Erfahrung mit der Software im täglichen Einsatz. Bitte melden Sie sich bei uns unter [https://www.playme.berlin/hilfe](https://www.playme.berlin/hilfe)`
